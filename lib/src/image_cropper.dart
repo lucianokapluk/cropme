@@ -97,11 +97,17 @@ class ImageCropper extends StatefulWidget {
   /// Theme configuration. Uses dark defaults if not provided.
   final CropperThemeData theme;
 
+  /// When set, locks the crop rect to this aspect ratio (width / height)
+  /// and hides the resize handles. For example, pass `4/5` for a portrait lock.
+  /// When null (default), free-form resizing is enabled.
+  final double? lockedAspectRatio;
+
   const ImageCropper({
     super.key,
     required this.imageBytes,
     this.initialSettings,
     this.theme = const CropperThemeData(),
+    this.lockedAspectRatio,
   });
 
   /// Static method to show the cropper as a full-screen dialog.
@@ -113,6 +119,7 @@ class ImageCropper extends StatefulWidget {
     required Uint8List imageBytes,
     CropSettings? initialSettings,
     CropperThemeData theme = const CropperThemeData(),
+    double? lockedAspectRatio,
   }) async {
     return Navigator.of(context).push(
       MaterialPageRoute(
@@ -120,6 +127,7 @@ class ImageCropper extends StatefulWidget {
           imageBytes: imageBytes,
           initialSettings: initialSettings,
           theme: theme,
+          lockedAspectRatio: lockedAspectRatio,
         ),
         fullscreenDialog: true,
       ),
@@ -728,8 +736,8 @@ class _ImageCropperState extends State<ImageCropper>
               ),
             ),
 
-            // Resize Handles Layer
-            if (_hasFitImage)
+            // Resize Handles Layer — hidden when aspect ratio is locked
+            if (_hasFitImage && widget.lockedAspectRatio == null)
               CropperResizeHandles(
                 cropRect: displayRect,
                 onCropRectChanged: _onCropRectChanged,
@@ -755,26 +763,15 @@ class _ImageCropperState extends State<ImageCropper>
     final center =
         Offset(availableSize.width / 2, topPadding + (usableHeight / 2));
 
-    double width = usableWidth;
-    double height = usableWidth;
+    // When an aspect ratio is locked, use it directly instead of the image ratio.
+    final ratio = widget.lockedAspectRatio ??
+        (_image != null ? _image!.width / _image!.height : 1.0);
 
-    if (_image != null) {
-      final imgRatio = _image!.width / _image!.height;
-      if (imgRatio > 1) {
-        width = usableWidth;
-        height = width / imgRatio;
-        if (height > usableHeight) {
-          height = usableHeight;
-          width = height * imgRatio;
-        }
-      } else {
-        height = usableHeight;
-        width = height * imgRatio;
-        if (width > usableWidth) {
-          width = usableWidth;
-          height = width / imgRatio;
-        }
-      }
+    double width = usableWidth;
+    double height = width / ratio;
+    if (height > usableHeight) {
+      height = usableHeight;
+      width = height * ratio;
     }
 
     return Rect.fromCenter(center: center, width: width, height: height);

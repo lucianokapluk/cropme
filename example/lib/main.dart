@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 import 'dart:ui';
 
-import 'package:flutter/cupertino.dart';
 import 'package:cropme/cropme.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 
 void main() {
@@ -73,6 +73,7 @@ class _HomeScreenState extends State<HomeScreen>
     if (!mounted) return;
 
     final result = await ImageCropper.show(
+      lockedAspectRatio: 4 / 5,
       context: context,
       imageBytes: _originalBytes!,
       theme: const CropperThemeData(
